@@ -1,17 +1,15 @@
-from logging import Filter
-
+from PeakFinder_Interp import FindPeaks
 import pandas as pd
 import numpy as np
-import scipy
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
+import os
 pd.set_option('display.width',400)
 pd.set_option('display.max_columns',50)
 pd.set_option('display.min_rows',100)
 pd.set_option('display.max_rows',800)
 np.set_printoptions(threshold=np.inf)
 
-def TGAFindPeaks(file_name = './Leached_Unsmoked_CigLU2_750C_10Cmin.csv', prom_setting = .01):
+def TGAFindPeaks(prom_setting = 0.01, folder_name = 'C:/Users/ewilkinson1605/Desktop/File Organization/Combined EML Data/TGA/Cigarette Filters/Leached Unsmoked/Leak', file_name = './Leached_Unsmoked_CigLU2_750C_10Cmin.csv'):
+    os.chdir(folder_name)
     with open(file_name, encoding='utf-16-le') as fileObject:
         row_list = []
         for row in fileObject:
@@ -77,50 +75,13 @@ def TGAFindPeaks(file_name = './Leached_Unsmoked_CigLU2_750C_10Cmin.csv', prom_s
     tga_data['Weight (%)'] = 100 * tga_data['Weight (mg)'] / ramp_start_weight
     residue = min(tga_data['Weight (%)'])
 
-    peaks = scipy.signal.find_peaks(tga_data['Deriv. Weight (%/°C)'], width=[75/heating_rate,2500/heating_rate], rel_height=.1, height = .05, prominence=prom_setting, wlen = 4500/heating_rate)
-    # print(peaks)
-    peak_sort = pd.DataFrame({'peaks':peaks[0],'prominences':peaks[1]['prominences']})
-    peak_sort.sort_values(by='prominences',axis=0,ascending=False,ignore_index=True,inplace=True)
-    # print(peak_sort)
-
-    span = int(500/heating_rate)
-    interpolated_peaks = []
-    peak_heights = []
-    for peak in peak_sort.iterrows():
-        temp_temps = np.array(tga_data['Temperature (°C)'].loc[peak[1]['peaks']-span:peak[1]['peaks']+span])
-        temp_derivs = np.array(tga_data['Deriv. Weight (%/°C)'].loc[peak[1]['peaks']-span:peak[1]['peaks']+span])
-        x, y = scipy.optimize.curve_fit(func, temp_temps, temp_derivs, p0=[tga_data['Temperature (°C)'].loc[peak[1]['peaks']],-.001,-.001,tga_data['Deriv. Weight (%/°C)'].loc[peak[1]['peaks']]])
-        interpolated_peaks.append(x[0])
-        peak_heights.append(x[3])
-
-        plt.figure(figsize=(4.5, 3), dpi=300)
-        plt.plot(temp_temps, temp_derivs)
-        plt.plot(temp_temps, func(temp_temps, *x), 'g--')
-        plt.plot(x[0],x[3],'x')
-        plt.show(block=True)
-        # print(y)
-
-    dc_c = [359.49582105285504, 130.49828874698957, 180.44422354427132]
-    dc_h = [1.9602503035000647, 0.08614022732249757, 0.08250885695486251]
-
-    pf_c = [np.float64(361.2381299332903), np.float64(129.343357775068), np.float64(175.07555286190598)]
-    pf_h = [np.float64(2.036192448749077), np.float64(0.11439523335376074), np.float64(0.10914504932714185)]
-
-
-    fig = plt.figure(sample_name + ' - ' + pos_name + '(' + pos_name2 + ') - ' + str(heating_rate),figsize=(4.5,3),dpi=300)
-    plt.plot(tga_data['Temperature (°C)'], tga_data['Deriv. Weight (%/°C)'])
-    for peak, height in zip(interpolated_peaks,peak_heights):
-        plt.plot(interpolated_peaks, peak_heights, 'x')
-        # plt.plot(pf_c, pf_h, 'x', color='red')
-        # plt.plot(dc_c, dc_h, 'x', color='blue')
-    plt.show()
+    interpolated_peaks = FindPeaks(x_data=tga_data['Temperature (°C)'], y_data=tga_data['Deriv. Weight (%/°C)'], width=[75/heating_rate,2500/heating_rate], rel_height=.1, height = .05, prom_setting=prom_setting, wlen = 4500/heating_rate)
+    print(interpolated_peaks)
 
     outputs = [sample_name, pos_name2, heating_rate, test_start_weight, float(ramp_start_weight), residue]
     for each in interpolated_peaks:
-        outputs.append(float(each))
+        outputs.append(float(each[1]))
     print(outputs)
-    print(interpolated_peaks)
-    print(peak_heights)
     return outputs
 
 def func(x,a,b,c,d):
