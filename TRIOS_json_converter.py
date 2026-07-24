@@ -1,12 +1,11 @@
 import json
 import pandas as pd
-from DMA_stress_strain_modulus_calc import calculate_modulus
 pd.set_option('display.width',300)
 pd.set_option('display.max_columns',100)
 pd.set_option('display.min_rows',200)
 pd.set_option('display.max_rows',400)
 
-def convert_json(file_name = 'C:/Users/ewilkinson/Documents/EML Files - Combined Data/DMA/PVDF Films/pvdf standard - dic test 4.json', strain_adjustment = True):
+def convert_json(file_name = 'C:/Users/ewilkinson/Documents/EML Files - Combined Data/DMA/PVDF Films/pvdf standard - dic test 5.json', strain_adjustment = True):
     with open(file_name, 'r', encoding='utf8') as file:
         json_data = json.load(file)
 
@@ -48,16 +47,17 @@ def convert_json(file_name = 'C:/Users/ewilkinson/Documents/EML Files - Combined
         converted_data['Adjusted Cross-sectional Area (mm^2)'] = initial_cross_sectional_area / (converted_data['Strain - Calculated (%)'] / 100 + 1)
         converted_data['Stress - Calculated (MPa)'] = converted_data['Force (N)'] / converted_data['Adjusted Cross-sectional Area (mm^2)']
 
+    if strain_adjustment:
+        output_filename = file_name[0:-5] + '-adjusted.csv'
+        print(f'"{sample_name}" analyzed, adjusted for initial size of {initial_length} x {initial_thickness} x {initial_width}')
+    else:
+        output_filename = file_name[0:-5] + '.csv'
+        print(f'"{sample_name}" analyzed')
+
     converted_data = converted_data.reindex(sorted(converted_data.columns), axis=1)
-    # print(converted_data)
+    converted_data.to_csv(output_filename, na_rep='', index=False, encoding='utf-8')
 
-    analysis_results = calculate_modulus(converted_data)
-    # print(analysis_results)
-
-    converted_data.to_csv(file_name[0:-5] + '.csv', na_rep='', index=False, encoding='utf-8')
-
-    print([sample_name, initial_length, initial_thickness, initial_width, analysis_results[0], analysis_results[1]])
-    return [sample_name, initial_length, initial_thickness, initial_width, analysis_results[0], analysis_results[1]]
+    return sample_name, initial_length, initial_thickness, initial_width
 
 if __name__ == "__main__":
     convert_json()
