@@ -57,7 +57,7 @@ def convert_json(file_name = 'C:/Users/ewilkinson/Documents/EML Files - Combined
     converted_data = converted_data.reindex(sorted(converted_data.columns), axis=1)
     converted_data.to_csv(output_filename, na_rep='', index=False, encoding='utf-8')
 
-    return sample_name, initial_length, initial_thickness, initial_width
+    return sample_name, initial_length, initial_thickness, initial_width, converted_data
 
 if __name__ == "__main__":
     convert_json()

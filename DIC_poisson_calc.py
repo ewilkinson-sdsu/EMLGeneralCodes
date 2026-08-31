@@ -6,14 +6,18 @@ pd.set_option('display.max_columns',100)
 pd.set_option('display.min_rows',800)
 pd.set_option('display.max_rows',800)
 
-dic_base_file_default = 'C:/Users/ewilkinson/Documents/EML Files - Combined Data/DIC/Mattress Project/Quasi-static Test 5'
-dma_file_default = 'C:/Users/ewilkinson/Documents/EML Files - Combined Data/DMA/PVDF Films/pvdf standard - dic test 5.csv'
+dic_base_file_default = 'C:/Users/Eric/Desktop/pvdf film project/dic files/pvdf standard - dic test 17'
+dma_file_default = 'C:/Users/Eric/Desktop/pvdf film project/PVDF Films/pvdf standard - dic test 17-adjusted.csv'
 
-def calculate_poisson(dic_base_file = None, dma_file = None, eval_index = 0, eval_span = 20, uncertainty_cutoff = 5, plot_data = False):
+def calculate_poisson(dic_base_file = None, dma_data = None, dma_file = None, eval_index = 0, eval_span = 20, uncertainty_cutoff = 5, plot_data = False):
     vert_file = dic_base_file + ' - vertical.xlsx'
     horiz_file = dic_base_file + ' - horizontal.xlsx'
 
-    dma_data = pd.read_csv(dma_file, encoding='utf-8')
+    if dma_data is None:
+        if dma_file is not None:
+            dma_data = pd.read_csv(dma_file, encoding='utf-8')
+        else:
+            print('Error: No DMA Data')
 
     vert_data = pd.read_excel(vert_file, skiprows=3, header=None, names=['Step','Vertical mStrain (mm/m)','Vertical mStrain Uncertainty (mm/m)'])
     horiz_data = pd.read_excel(horiz_file, skiprows=3, header=None, names=['Step','Horizontal mStrain (mm/m)','Horizontal mStrain Uncertainty (mm/m)'])
@@ -46,8 +50,8 @@ def calculate_poisson(dic_base_file = None, dma_file = None, eval_index = 0, eva
         fig, ax = plt.subplots()
         ax.plot(dma_data['Strain - Calculated (%)'], dma_data['Poisson Ratio'],'k')
         ax.set(xlabel='Strain (%)', ylabel="Poisson's")
-        ax.set_xlim(0, 5)
-        ax.set_ylim(0, 0.3)
+        ax.set_xlim(0, 15)
+        ax.set_ylim(0, 0.4)
         ax2 = ax.twinx()
         ax2.plot(dma_data['Strain - Calculated (%)'], dma_data['tan(Modulus) (MPa)'],'r')
         ax2.set(ylabel="tan(mod) (MPa)")
@@ -74,7 +78,7 @@ def calculate_poisson(dic_base_file = None, dma_file = None, eval_index = 0, eva
 
     temp_index = dma_data.loc[dma_data['Poisson Ratio Running Avg Unvertainty (%)'] < uncertainty_cutoff].index[0]
 
-    return dma_data.loc[temp_index, ['Strain - Calculated (%)', 'Poisson Ratio Running Avg']].to_list()
+    return dma_data.loc[len(dma_data) - 1, ['Strain - Calculated (%)', 'Poisson Ratio Running Avg']].to_list()
 
 if __name__ == "__main__":
     print(calculate_poisson(dic_base_file=dic_base_file_default, dma_file=dma_file_default))
